@@ -235,7 +235,7 @@ impl Counter {
         self.count
     }
 
-    fn increment(&mut_self) {
+    fn increment(&mut self) {
         self.count += 1
     }
 }
@@ -254,7 +254,7 @@ fn main() {
     let first = &vec[0];
     vec.clear(); // mutable reference
 
-    printn!("{}", first) // first is an immutable borrow, and we cannot have both at the same time
+    println!("{}", first) // first is an immutable borrow, and we cannot have both at the same time
 \end{lstlisting}
 \end{document}
 
