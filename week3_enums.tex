@@ -1,0 +1,198 @@
+\section{Enums} 
+\begin{definition}
+    In Rust, enums can be used to define a type that can take on one of multiple possible variants.
+\end{definition}
+
+\begin{lstlisting}[frame = none]
+enum Shape {
+    Circle,
+    Rectangle,
+}
+
+let what_shape: String = match circle {
+    Shape::Circle => "circle".to_string(),
+    _ => "not a circle".to_string(), // _ is a "wildcard" type
+};
+
+fn main() {
+    let circle = Shape::Circle;
+
+    match circle {
+        Shape::Circle => println!("Circle"),
+        Shape::Rectangle => println!("Rectangle"),
+    }
+}
+\end{lstlisting}
+
+We can also add data to each variant, either by making it a tuple variant or a struct variant. \\
+
+\begin{definition}Tuple variants have unnamed fields, while struct variants have named fields.
+\end{definition}
+
+\begin{lstlisting}[frame = none]
+enum Shape {
+    Circle(f64),
+    Rectangle {
+        width: f64,
+        height: f64,
+    }
+}
+
+fn main() {
+    let circle = Shape::Circle(5.0);
+
+    match circle {
+        Shape::Circle(radius) => {
+            println!("Circle with radius {radius}");
+        }
+        Shape::Rectangle { width: w, height: h } => {
+            println!("Rectangle that is {w} by {h}");
+        }
+    }
+
+}
+\end{lstlisting}
+
+Note that enums are also types, so we can pass in different variants of a given structure to a function expecting that structure:
+\begin{lstlisting}[frame = none]
+impl Shape {
+    fn area(&self) -> f64 {
+        match self {
+            Shape::Rectangle { width, height } => {
+                width * height
+            }
+            Shape::Circle(radius) => {
+                3.141 * radius * radius
+            }
+        }
+    }
+}
+
+let circle: Shape = Shape::Circle(5.0);
+let area = circle.area();
+println!("Area: {}", area);
+
+\end{lstlisting}
+
+We can use enums to solve some major problems, including nullability and error handling. \\
+
+For example, to handle ``divide by zero'' errors, we can use the \codeword{Option} enum.
+\begin{lstlisting}[frame = none]
+// The `T` is a generic type, ignore for now.
+enum Option<T> {
+    None,
+    Some(T),
+}
+
+fn divide(numerator: f32, denominator: f32) -> Option<f32> {
+    // Check for div by zero
+    if denominator == 0.0 {
+        // We can't divide by zero, no float can be returned
+        None
+    } else {
+        // denominator is nonzero, we can do the operation
+        let quotient: f32 = numerator / denominator;
+
+        // Can't just return `quotient` because it's `f32`
+        Some(quotient)
+    }
+}
+
+let quotient: Option<f32> = divide(10.0, 2.0);
+println!("{:?}", quotient);
+
+let zero_div: Option<f32> = divide(10.0, 0.0);
+println!("{:?}", zero_div);
+
+\end{lstlisting}
+
+We can similarly account for null pointer names for greet(), which we coded in Lab 1. 
+
+\begin{lstlisting}[frame = none]
+fn greet(maybe_name: Option<&str>) {
+    match maybe_name {
+        Some(name) => println!("Hello, {}", name),
+        None => println!("Who's there?"),
+    }
+}
+
+greet(Some("William"));
+greet(None);
+\end{lstlisting}
+
+The other big problem that can be handled by enums is error handling. 
+To handle this sort of error, we can use the Result enum.
+\begin{lstlisting}[frame = none]
+enum Result<T, E> {
+    // success
+    Ok(T),
+    // failure
+    Err(E),
+}
+    
+\end{lstlisting}
+
+We can use the \codeword{?} operator to allow for error propagation:
+
+\begin{lstlisting}[frame = none]
+fn read_to_string(path: &str) -> Result<String, io::Error>
+    
+use std::{fs, io};
+
+fn main() -> Result<(), io::Error> {
+    let string: String = match fs::read_to_string("names.txt") {
+        Ok(string) => string,
+        Err(err) => return Err(err),
+    };
+
+    println!("{}", string);
+    Ok(())
+}
+\end{lstlisting}
+
+can be transformed to the following code:
+
+\begin{lstlisting}[frame = none]
+use std::{fs, io};
+
+// the `Ok` value is `()`, the unit type.
+fn main() -> Result<(), io::Error> {
+    let string: String = fs::read_to_string("names.txt")?; // <-- here
+
+    println!("{}", string);
+    Ok(())
+}
+
+\end{lstlisting}
+
+This can also work for functions that return option types, as follows:
+\begin{lstlisting}[frame = none]
+fn sum_first_two(vec: &[i32]) -> Option<i32> {
+    // `.get(x)` might return `None` if the vec is empty.
+    // If either of these `.get(x)`s fail, the function will
+    // short circuit and return `None`.
+    Some(vec.get(0)? + vec.get(1)?)
+}
+\end{lstlisting}
+
+We can even write expressions with \codeword{?}, which is itself an expression! For example, we can do the following, which takes the result of a division and add 5 to it.
+\begin{lstlisting}[frame = none][frame = none]
+fn compute(a: f32, b: f32) -> Result<f32, String> {
+    Ok(divide(n: a, d: b)? + 5.0)
+}
+
+\end{lstlisting}
+
+An important caveat of the ``?'' syntax is that it only works with \codeword{Option} and \codeword{Result} types. \\
+
+To summarize, we learned the following: \\
+
+\begin{itemize}
+    \item Rust enums are types that can be one of several variants which may contain different types.
+    \item We use match statements to determine which variant an enum is.
+    \item The problem of null pointers and references can be solved with enums like \codeword{Option<T>}
+    \item Different languages have their own ways to mark a function as ``fallible", Rust has the \codeword{Result<T, E> enum}.
+    \item The \codeword{?} operator can be used to propagate errors with minimal syntactic overhead.
+    \item Enums are excellent for representing possible kinds of errors.
+    \item The \codeword{?} operator can perform implicit conversion using the \codeword{From<T>} trait.
+\end{itemize}
