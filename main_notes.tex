@@ -1,4 +1,4 @@
-\documentclass[12pt]{amsart}
+\documentclass[12pt]{article}
 \usepackage{fullpage,url,mathrsfs,setspace,amssymb}
 \usepackage[all]{xy} % for complicated commutative diagrams
 \usepackage{hyperref}
@@ -11,7 +11,28 @@
     pdfpagemode=FullScreen,
 }
 
-
+\makeatletter
+\def\@tocline#1#2#3#4#5#6#7{\relax
+  \ifnum #1>\c@tocdepth % then omit
+  \else
+    \par \addpenalty\@secpenalty\addvspace{#2}%
+    \begingroup \hyphenpenalty\@M
+    \@ifempty{#4}{%
+      \@tempdima\csname r@tocindent\number#1\endcsname\relax
+    }{%
+      \@tempdima#4\relax
+    }%
+    \parindent\z@ \leftskip#3\relax \advance\leftskip\@tempdima\relax
+    \rightskip\@pnumwidth plus4em \parfillskip-\@pnumwidth
+    #5\leavevmode\hskip-\@tempdima
+      \ifcase #1
+       \or\or \hskip 1em \or \hskip 2em \else \hskip 3em \fi%
+      #6\nobreak\relax
+    \hfill\hbox to\@pnumwidth{\@tocpagenum{#7}}\par% <---- \dotfill -> \hfill
+    \nobreak
+    \endgroup
+  \fi}
+\makeatother
 \usepackage{listings, listings-rust}
 \usepackage{color}
 
@@ -69,9 +90,13 @@
 \setlength\parindent{0pt}
 \begin{document}
 
-\title[short paper title]{Rust Programming Course Notes}
+\title{Rust Programming Course Notes}
 \author{David Yang}
 \maketitle
+
+\setcounter{tocdepth}{2}
+
+\tableofcontents
 
 \input{week1_intro.tex}
 
@@ -82,6 +107,11 @@
 \newpage
 
 \input{week3_enums.tex}
+
+\newpage
+
+\input{week4_traits_generics.tex}
+
 
 \end{document}
 

@@ -1,0 +1,174 @@
+\section{Traits and Generics}
+
+\subsection{Generics} Generics are used to create definitions for items like function signatures or structs, which we can then use with many different concrete data types.
+
+\begin{lstlisting}[frame = none]
+pub enum Either {
+    Left(String),
+    Right(i32),
+}
+
+impl Either {
+    pub fn into_left(self) -> Option<String> {
+        match self {
+            Either::Left(string) => Some(string),
+            Either::Right(_) => None,
+        }
+    }
+}
+\end{lstlisting}
+
+To make ``Either" more generic, we can use \textbf{type parameters} on the Either type to make it generic over any two types. \\
+
+\begin{lstlisting}[frame = none]
+pub enum Either<L, R> {
+    Left(L),
+    Right(R),
+}
+\end{lstlisting}
+\begin{definition}
+Here, we refer to \codeword{L} and \codeword{R} are generic types.
+\end{definition}
+
+We can now do declarations as follows:
+\begin{lstlisting}[frame = none]
+// The `L` and `R` types are replaced with `String` and `i32` respectively for these.
+let message: Either<String, i32> = Either::Left("Hello, world!".to_string());
+let integer: Either<String, i32> = Either::Right(5);
+\end{lstlisting}
+
+Note that the impl blocks need to be changed as well:
+\begin{lstlisting}[frame = none]
+impl<L, R> Either<L, R> {
+    //  ^^^^^^ We need this now
+        pub fn into_left(self) -> Option<L> { // <- was `Option<String>` before
+            match self {
+                Either::Left(left) => Some(left),
+                Either::Right(_right) => None,
+            }
+        }
+    
+        // other methods here
+    } 
+// We can call `.replace_left(...)` with any type we want, here's with `f32`
+let float_or_int: Either<f32, i32> = string_or_int.replace_left(5.0);
+\end{lstlisting}
+
+Here's the structure for a function that will swap the left and right sides:
+\begin{lstlisting}[frame = none]
+fn swap<L, R>(val: Either<L, R>) -> Either<R, L> {
+    match val {
+        Either::Left(left: L) -> Either::Right(left),
+        Either::Right(right: R) -> Either::Left(right),
+    }
+}
+\end{lstlisting}
+
+\subsection{Traits}
+\begin{definition}
+Traits define shared behavior between different types.
+\end{definition}
+
+Let's give a general framework for where we can use traits:
+\begin{lstlisting}[]
+// define tweets and books
+struct Tweet {
+    username: String,
+    content: String,
+    likes: u32,
+}
+
+struct Book {
+    author: String,
+    title: String,
+    content: String,
+}
+
+// use traits instead (for similar structures)
+
+trait Summary {
+    fn summarize(&self) -> String;
+}    
+
+// Implementing functions to summarize tweets and books
+impl Summary for Tweet {
+    fn summarize(&self) -> String {
+        format!("@{}: {}", self.username, self.content)
+    }
+}
+
+impl Summary for Book {
+    fn summarize(&self) -> String {
+        format!("{}, by {}", self.title, self.author)
+    }
+}
+\end{lstlisting}
+
+
+The key of the above code is the \codeword{trait} type for summaries!
+
+\begin{lstlisting}
+trait Summary {
+    fn summarize(&self) -> String;
+}    
+\end{lstlisting}
+
+\begin{definition}
+We can use trait bounds to abstract traits where you have a function or struct/enum with a generic type that must implement some set of traits.
+\end{definition}
+
+\begin{lstlisting}[frame = none]
+// Takes a generic `T`, but _only_ if the T type implements `Summary`!
+fn describe<T: Summary>(text: T) {
+    // `text` can do anything that `Summary` can do because of the trait bound
+    println!("Here's a short summary of the text: {}", text.summarize());
+}
+
+let tweet = Tweet {
+    username: "swarthmore".to_string(),
+    content: "Only 12 more days until spring semester classes begin! We can't wait to welcome our students back to campus.".to_string(),
+    likes: 35,
+};
+
+let book = Book {
+    author: "Mara Bos".to_string(),
+    title: "Atomics and Locks".to_string(),
+    content: "-- omitted -".to_string(),
+};
+
+describe(tweet);
+describe(book);
+    
+\end{lstlisting}
+
+We can also use \textbf{Blanket Traits}, which can be done as follows.
+
+\begin{lstlisting}[frame = none]
+trait Print {
+    fn print(&self);
+}
+
+// implementing Print for anything that has Display
+impl<T: std:fmt::Display> Print for T {
+    fn print(&self) {
+        println!("{}", self);
+    }
+}
+\end{lstlisting}
+
+The three main uses for traits include
+\begin{itemize}
+    \item Interfaces
+    \item Operator Overloading
+    \item Type Markers
+\end{itemize} 
+
+Summary: 
+\begin{itemize}
+    \item Generics allow for defining types and functions that work on values of different types.
+    \item Traits are like interfaces that types can implement.
+    \item Types and functions can use trait bounds on generic types to restrict which types can be used.
+    \item Monomorphization is the process where the compiler looks at every usage of a generic and turns it into its own copy of the function or type.
+    \item Monomorphization can lead to more optimization, but slower compile times in some extreme cases.
+    \item Traits allow for operator overloading, shared interfaces, and type markers for the compiler like Copy.
+\end{itemize}
