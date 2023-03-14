@@ -1,0 +1,96 @@
+\section{Lifetimes and Aliasing}
+
+\begin{definition}[Lifetimes]
+The lifetime of something is the duration of a program's execution during which it exists
+\end{definition}
+
+The following fails in C:
+\begin{lstlisting}[language = C, frame = none]
+int* foo() {
+  int x = 3;
+  return &x;
+}
+\end{lstlisting}
+
+due to lifetimes, as the lifetime of $x$ is restricted to the function \codeword{foo()}. \\
+
+We can write the following in Rust to address lifetimes:
+\begin{lstlisting}[frame = none]
+fn get_default<'a>(map: &'a HashMap<String, String>, key: &'a String, default: &'a String) -> &'a String {
+  match map.get(key) {
+      Some(val) => val,
+      None => default,
+  }
+}
+\end{lstlisting}
+
+Here, \codeword{'a} is a generic \textit{lifetime} parameter.
+The return value lives at least as long as whichever lives the shortest between map, key, and default. \\
+
+However, the following code 
+\begin{lstlisting}[frame = none]
+let default = "DEFAULT".to_string();
+let mut map = HashMap::new();
+map.insert("Hello".to_string(), "World".to_string());
+let value;
+{
+    let key = "missing".to_string(); // `key` allocated here
+    value = get_default(&map, &key, &default);
+} // `key` dropped here
+// `map`, `default`, and `value` still valid
+println!("{}", value);
+  
+\end{lstlisting}
+causes problems due to the lifetime of key. Instead, we can use the following code, which will compile.
+
+\begin{lstlisting}[frame = none]
+fn get_default<'a>(map: &'a HashMap<String, String>, key: &String, default: &'a String) -> &'a String {
+  match map.get(key) {
+      Some(val) => val,
+      None => default,
+  }
+}
+\end{lstlisting}
+
+Something can ``expire" in terms of its lifetime if it is moved out of scope, or if it is borrowed elsewhere. \\
+
+References in structs \textbf{need to have lifetimes}. We can introduce the following Salad example:
+\begin{lstlisting}[frame = none]
+struct Salad<'a> {
+  lettuce: &'a str,
+  dressing: &'a str,
+}
+
+impl<'a> Salad <'a> {
+  fn new(lettuce: &'a str, dressing: &'a str) -> Salad<'a> {
+    Salad {
+      lettuce,
+      dressing,
+    }
+  }
+}
+
+fn main() {
+  let lettuce = "lettuce".to_string();
+  let dressing = "ranch".to_string();
+  let salad = Salad::new(&lettuce, &dressing);
+}
+\end{lstlisting}
+
+works! But the following does not (due to lifetimes):
+\begin{lstlisting}[frame = none]
+fn main() {
+  let dressing = "ranch".to_string();
+  let salad = {
+    let lettuce = "lettuce".to_string();
+    let salad = Salad::new(&lettuce, &dressing);
+    salad
+  } // lettuce lifetime is in block
+}
+\end{lstlisting}
+
+\begin{definition}
+A static reference is one that lives forever (e.g. string literals such as lettuce and dressing in the examples above).
+\end{definition}
+
+\textcolor{red}{Add more about aliasing}.
